@@ -1,13 +1,11 @@
 import axios from 'axios';
 
-// Detect if we're in development and try HTTPS first, fallback to HTTP
+// Force HTTP in development to avoid HTTPS certificate issues
 const getBaseURL = () => {
   const isDev = import.meta.env.DEV;
   if (isDev) {
-    // Try HTTPS first, fallback to HTTP if needed
-    return window.location.protocol === 'https:' 
-      ? 'https://localhost:8000/api' 
-      : 'http://localhost:8000/api';
+    // Always use HTTP in development to avoid self-signed certificate issues
+    return 'http://localhost:8000/api';
   }
   // In production, use the same protocol as the frontend
   return `${window.location.protocol}//${window.location.hostname}:8000/api`;
@@ -18,7 +16,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout
+  timeout: 30000, // Increased timeout to 30 seconds
 });
 
 // Request interceptor to add auth token
@@ -39,20 +37,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Handle network errors (like HTTPS certificate issues)
+    // Handle network errors
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-      // Try switching to HTTP if HTTPS fails
-      if (api.defaults.baseURL?.startsWith('https://')) {
-        console.warn('HTTPS connection failed, falling back to HTTP');
-        api.defaults.baseURL = api.defaults.baseURL.replace('https://', 'http://');
-        
-        // Retry the original request with HTTP
-        if (error.config && !error.config._retry) {
-          error.config._retry = true;
-          error.config.baseURL = api.defaults.baseURL;
-          return api.request(error.config);
-        }
-      }
+      console.error('Network connection failed. Please ensure the backend server is running on http://localhost:8000');
+      
+      // Don't retry automatically to avoid infinite loops
+      const customError = new Error('Unable to connect to the server. Please check if the backend is running.');
+      customError.name = 'NetworkError';
+      return Promise.reject(customError);
     }
     
     if (error.response?.status === 401) {

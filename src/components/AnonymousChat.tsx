@@ -157,12 +157,26 @@ export const AnonymousChat: React.FC = () => {
 
     } catch (error) {
       console.error('Failed to send message:', error);
-      const errorMessage: ChatMessage = {
+      
+      // Provide more specific error messages
+      let errorMessage = "I'm sorry, I'm having trouble responding right now. Please know that your feelings are valid and important.";
+      
+      if (error.name === 'NetworkError' || error.message?.includes('Network Error')) {
+        errorMessage = "I'm having trouble connecting to the server. Please make sure you're connected to the internet and try again. If the problem persists, the server might be temporarily unavailable.";
+        toast.error('Connection failed. Please check your internet connection.');
+      } else if (error.code === 'ECONNREFUSED') {
+        errorMessage = "The support service is temporarily unavailable. Please try again in a few moments.";
+        toast.error('Service temporarily unavailable');
+      }
+      
+      errorMessage += "\n\nIf you're in crisis, please reach out to a crisis hotline: 988 (Suicide & Crisis Lifeline) or text HOME to 741741.";
+
+      const errorBotMessage: ChatMessage = {
         type: 'bot',
-        content: "I'm sorry, I'm having trouble responding right now. Please know that your feelings are valid and important. If you're in crisis, please reach out to a crisis hotline: 988 (Suicide & Crisis Lifeline) or text HOME to 741741.",
+        content: errorMessage,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorBotMessage]);
     } finally {
       setLoading(false);
     }
