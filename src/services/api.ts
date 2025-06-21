@@ -1,14 +1,12 @@
 import axios from 'axios';
 
-// Force HTTP in development to avoid HTTPS certificate issues
+// Use the same protocol as the frontend to avoid mixed-content issues
 const getBaseURL = () => {
-  const isDev = import.meta.env.DEV;
-  if (isDev) {
-    // Always use HTTP in development to avoid self-signed certificate issues
-    return 'http://localhost:8000/api';
-  }
-  // In production, use the same protocol as the frontend
-  return `${window.location.protocol}//${window.location.hostname}:8000/api`;
+  const protocol = window.location.protocol;
+  const hostname = 'localhost';
+  const port = '8000';
+  
+  return `${protocol}//${hostname}:${port}/api`;
 };
 
 export const api = axios.create({
@@ -39,10 +37,12 @@ api.interceptors.response.use(
   async (error) => {
     // Handle network errors
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-      console.error('Network connection failed. Please ensure the backend server is running on http://localhost:8000');
+      const protocol = window.location.protocol;
+      const expectedURL = `${protocol}//localhost:8000`;
+      console.error(`Network connection failed. Please ensure the backend server is running on ${expectedURL}`);
       
       // Don't retry automatically to avoid infinite loops
-      const customError = new Error('Unable to connect to the server. Please check if the backend is running.');
+      const customError = new Error(`Unable to connect to the server. Please check if the backend is running on ${expectedURL}.`);
       customError.name = 'NetworkError';
       return Promise.reject(customError);
     }
