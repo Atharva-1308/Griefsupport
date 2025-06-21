@@ -10,15 +10,31 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   server: {
-    https: {
-      key: fs.existsSync(path.resolve(__dirname, 'certs/key.pem')) 
-        ? fs.readFileSync(path.resolve(__dirname, 'certs/key.pem'))
-        : undefined,
-      cert: fs.existsSync(path.resolve(__dirname, 'certs/cert.pem'))
-        ? fs.readFileSync(path.resolve(__dirname, 'certs/cert.pem'))
-        : undefined,
-    },
     host: '0.0.0.0',
     port: 5173,
+    // Only use HTTPS if certificates exist
+    https: (() => {
+      const keyPath = path.resolve(__dirname, 'certs/key.pem');
+      const certPath = path.resolve(__dirname, 'certs/cert.pem');
+      
+      if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+        return {
+          key: fs.readFileSync(keyPath),
+          cert: fs.readFileSync(certPath),
+        };
+      }
+      return false;
+    })(),
+  },
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress certain warnings
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
+          return;
+        }
+        warn(warning);
+      },
+    },
   },
 });

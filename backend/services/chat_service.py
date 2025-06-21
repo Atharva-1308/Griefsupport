@@ -1,17 +1,27 @@
 """
 Enhanced AI Chatbot service for grief counseling conversations using OpenAI GPT-4.
+Improved error handling and fallback responses.
 """
 
 import openai
 import os
 from dotenv import load_dotenv
 from typing import List, Dict
+import logging
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 class ChatService:
     def __init__(self):
-        self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        if self.api_key:
+            self.client = openai.OpenAI(api_key=self.api_key)
+            logger.info("✅ OpenAI client initialized")
+        else:
+            self.client = None
+            logger.warning("⚠️  OpenAI API key not found - using fallback responses")
+            
         self.system_prompt = """
         You are a compassionate and professional AI grief counselor named "Hope". Your role is to provide emotional support, 
         guidance, and resources to people who are grieving. You should:
@@ -65,10 +75,22 @@ class ChatService:
         """
         
         # Conversation context to maintain continuity
-        self.conversation_history: Dict[int, List[Dict]] = {}
+        self.conversation_history: Dict[str, List[Dict]] = {}
 
-    async def process_message(self, message: str, user_id: int) -> str:
-        """Process a user message and return AI response using OpenAI GPT-4"""
+    async def process_message(self, message: str, user_id: str) -> str:
+        """Process a user message and return AI response using OpenAI GPT-4 or fallback"""
+        try:
+            if self.client and self.api_key:
+                return await self._process_with_openai(message, user_id)
+            else:
+                return self._get_fallback_response(message, "no_api_key")
+                
+        except Exception as e:
+            logger.error(f"Chat service error: {str(e)}")
+            return self._get_fallback_response(message, "general_error")
+
+    async def _process_with_openai(self, message: str, user_id: str) -> str:
+        """Process message using OpenAI API"""
         try:
             # Initialize conversation history for new users
             if user_id not in self.conversation_history:
@@ -110,11 +132,13 @@ class ChatService:
             return ai_response
             
         except openai.APIError as e:
+            logger.error(f"OpenAI API error: {e}")
             return self._get_fallback_response(message, "api_error")
         except openai.RateLimitError as e:
+            logger.error(f"OpenAI rate limit error: {e}")
             return self._get_fallback_response(message, "rate_limit")
         except Exception as e:
-            print(f"Chat service error: {str(e)}")
+            logger.error(f"OpenAI processing error: {e}")
             return self._get_fallback_response(message, "general_error")
 
     def _get_fallback_response(self, message: str, error_type: str) -> str:
@@ -124,7 +148,7 @@ class ChatService:
         message_lower = message.lower()
         
         # Crisis-related keywords
-        crisis_keywords = ['suicide', 'kill myself', 'end it all', 'can\'t go on', 'want to die']
+        crisis_keywords = ['suicide', 'kill myself', 'end it all', 'can\'t go on', 'want to die', 'hurt myself']
         if any(keyword in message_lower for keyword in crisis_keywords):
             return """I'm very concerned about what you've shared. Your life has value, and there are people who want to help you through this difficult time.
 
@@ -138,40 +162,47 @@ You don't have to face this alone. Professional counselors are available 24/7 to
 Would you be willing to reach out to one of these resources today?"""
 
         # Emotional keyword responses
-        if any(word in message_lower for word in ['sad', 'crying', 'tears', 'heartbroken']):
+        if any(word in message_lower for word in ['sad', 'crying', 'tears', 'heartbroken', 'devastated']):
             return """I can hear the deep sadness in your words, and I want you to know that what you're feeling is completely natural and valid. Tears are often the heart's way of expressing love that has nowhere to go.
 
 Grief can feel overwhelming, like waves crashing over you. It's okay to let yourself feel these emotions - they're a testament to the love you carry. Some days will be harder than others, and that's part of the journey.
 
-What has been the most difficult part of today for you? Sometimes sharing the weight can help lighten the load, even just a little."""
+What has been the most difficult part of today for you? Sometimes sharing the weight can help lighten the load, even just a little. Remember, you're not alone in this."""
 
-        elif any(word in message_lower for word in ['angry', 'mad', 'frustrated', 'rage']):
+        elif any(word in message_lower for word in ['angry', 'mad', 'frustrated', 'rage', 'furious']):
             return """Anger is such a common and valid part of grief, though it can feel confusing or even frightening. You might feel angry at the situation, at yourself, at others, or even at your loved one for leaving. All of these feelings are normal.
 
 Anger often masks other emotions like fear, sadness, or helplessness. It can actually be a sign that you're starting to process your loss more deeply.
 
-Have you found any healthy ways to express or release this anger? Sometimes physical activity, journaling, or even screaming into a pillow can help. What feels right for you?"""
+Have you found any healthy ways to express or release this anger? Sometimes physical activity, journaling, or even screaming into a pillow can help. What feels right for you right now?"""
 
-        elif any(word in message_lower for word in ['lonely', 'alone', 'isolated', 'empty']):
+        elif any(word in message_lower for word in ['lonely', 'alone', 'isolated', 'empty', 'abandoned']):
             return """The loneliness that comes with grief can feel so profound and isolating. When someone important is no longer physically present, the world can feel empty and different. You're not alone in feeling this way.
 
 Even when surrounded by people, grief can make us feel deeply alone because others might not fully understand what we're experiencing. This is one of the hardest parts of loss.
 
 Is there anyone in your life who has been supportive, even if they don't fully understand? Sometimes just having someone sit with us in our pain can help. You're also part of a community here of people who understand grief intimately."""
 
-        elif any(word in message_lower for word in ['guilt', 'regret', 'should have', 'if only']):
+        elif any(word in message_lower for word in ['guilt', 'regret', 'should have', 'if only', 'my fault']):
             return """Guilt and regret are such heavy companions in grief. The 'what ifs' and 'if onlys' can replay endlessly in our minds. Please know that these feelings, while painful, are very common.
 
 We often hold ourselves to impossible standards when it comes to our relationships with those we've lost. The truth is, love is imperfect, and so are we. What matters is that you cared, and that love was real.
 
 Is there something specific you're struggling with guilt about? Sometimes speaking these thoughts aloud can help us see them more clearly and with more compassion for ourselves."""
 
-        elif any(word in message_lower for word in ['help', 'support', 'don\'t know', 'lost']):
+        elif any(word in message_lower for word in ['help', 'support', 'don\'t know', 'lost', 'confused']):
             return """Reaching out shows incredible strength, even when you feel lost. Grief can make everything feel uncertain and overwhelming - that's completely understandable.
 
 There's no roadmap for grief because every person's journey is unique. What helps one person might not help another, and that's okay. The fact that you're here, seeking support, is already a meaningful step.
 
 Some people find comfort in talking, others in creative expression, movement, or quiet reflection. What has brought you even small moments of peace or comfort in the past? We can start there and build slowly."""
+
+        elif any(word in message_lower for word in ['miss', 'missing', 'memories', 'remember']):
+            return """Missing someone is one of the most natural expressions of love. Those memories you carry are precious gifts - they're proof of the bond you shared and the impact that person had on your life.
+
+Sometimes memories can bring comfort, and sometimes they can bring fresh waves of pain. Both responses are completely normal. Your loved one lives on in these memories, in the ways they changed you, and in the love that continues even though they're not physically here.
+
+What's one memory that brings you comfort, even if it also brings sadness? Sometimes sharing these memories can help us feel connected to our loved ones."""
 
         else:
             # General supportive response
@@ -181,13 +212,15 @@ Grief is such a personal journey, and there's no right or wrong way to experienc
 
 I'm here to listen and support you through this. What's been on your heart today? Sometimes just putting our thoughts and feelings into words can help us process them a little better.
 
-Remember, healing doesn't mean forgetting or 'getting over' your loss. It means learning to carry your love in a new way."""
+Remember, healing doesn't mean forgetting or 'getting over' your loss. It means learning to carry your love in a new way. You're stronger than you know, and you don't have to walk this path alone."""
 
         # Add error-specific messages
         if error_type == "rate_limit":
             return f"\n\n(I'm experiencing high demand right now, but I'm still here to support you with these thoughtful responses.)"
         elif error_type == "api_error":
             return f"\n\n(I'm having some technical difficulties, but my care for you remains constant.)"
+        elif error_type == "no_api_key":
+            return f"\n\n(I'm running in offline mode but still here to provide support and guidance.)"
 
     def get_coping_strategies(self) -> list:
         """Get a comprehensive list of coping strategies for grief"""
@@ -244,7 +277,7 @@ Remember, healing doesn't mean forgetting or 'getting over' your loss. It means 
             }
         ]
 
-    def clear_conversation_history(self, user_id: int):
+    def clear_conversation_history(self, user_id: str):
         """Clear conversation history for a user"""
         if user_id in self.conversation_history:
             del self.conversation_history[user_id]

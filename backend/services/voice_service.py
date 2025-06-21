@@ -1,5 +1,6 @@
 """
 Enhanced Voice service using ElevenLabs API for voice cloning and synthesis.
+Improved error handling and fallback responses.
 """
 
 import os
@@ -9,19 +10,29 @@ import requests
 from fastapi import UploadFile
 from dotenv import load_dotenv
 from typing import Dict, List
+import logging
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 class VoiceService:
     def __init__(self):
         self.api_key = os.getenv("ELEVENLABS_API_KEY")
         self.base_url = "https://api.elevenlabs.io/v1"
         
-        if not self.api_key:
-            raise ValueError("ElevenLabs API key not found in environment variables")
+        if self.api_key:
+            logger.info("✅ ElevenLabs API key found")
+        else:
+            logger.warning("⚠️  ElevenLabs API key not found - voice features will be limited")
 
     async def clone_voice(self, voice_file: UploadFile, voice_name: str, user_id: int) -> dict:
         """Clone a voice using ElevenLabs API"""
+        if not self.api_key:
+            return {
+                "status": "error",
+                "message": "Voice cloning not available - API key not configured"
+            }
+            
         try:
             # Save uploaded file temporarily
             temp_filename = f"temp_{uuid.uuid4()}.{voice_file.filename.split('.')[-1]}"
@@ -50,10 +61,11 @@ class VoiceService:
                     "files": (voice_file.filename, audio_file, voice_file.content_type)
                 }
                 
-                response = requests.post(url, headers=headers, data=data, files=files)
+                response = requests.post(url, headers=headers, data=data, files=files, timeout=30)
             
             # Clean up temp file
-            os.remove(temp_path)
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
             
             if response.status_code == 200:
                 result = response.json()
@@ -64,16 +76,30 @@ class VoiceService:
                     "status": "success"
                 }
             else:
-                raise Exception(f"ElevenLabs API error: {response.status_code} - {response.text}")
+                logger.error(f"ElevenLabs API error: {response.status_code} - {response.text}")
+                return {
+                    "status": "error",
+                    "message": f"Voice cloning failed: {response.status_code}"
+                }
             
         except Exception as e:
             # Clean up temp file if it exists
             if 'temp_path' in locals() and os.path.exists(temp_path):
                 os.remove(temp_path)
-            raise Exception(f"Voice cloning failed: {str(e)}")
+            logger.error(f"Voice cloning error: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Voice cloning failed: {str(e)}"
+            }
 
     async def synthesize_speech(self, text: str, voice_id: str = None, user_id: int = None) -> dict:
         """Synthesize speech from text using ElevenLabs"""
+        if not self.api_key:
+            return {
+                "status": "error",
+                "message": "Voice synthesis not available - API key not configured"
+            }
+            
         try:
             # Use default voice if none specified
             if not voice_id:
@@ -98,7 +124,7 @@ class VoiceService:
                 }
             }
             
-            response = requests.post(url, json=data, headers=headers)
+            response = requests.post(url, json=data, headers=headers, timeout=30)
             
             if response.status_code == 200:
                 # Save audio file
@@ -119,20 +145,52 @@ class VoiceService:
                     "status": "success"
                 }
             else:
-                raise Exception(f"ElevenLabs API error: {response.status_code} - {response.text}")
+                logger.error(f"ElevenLabs synthesis error: {response.status_code} - {response.text}")
+                return {
+                    "status": "error",
+                    "message": f"Speech synthesis failed: {response.status_code}"
+                }
             
         except Exception as e:
-            raise Exception(f"Speech synthesis failed: {str(e)}")
+            logger.error(f"Speech synthesis error: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Speech synthesis failed: {str(e)}"
+            }
 
     async def list_voices(self) -> dict:
         """List available voices from ElevenLabs"""
+        if not self.api_key:
+            # Return default voices when API key is not available
+            return {
+                "voices": [
+                    {
+                        "voice_id": "21m00Tcm4TlvDq8ikWAM",
+                        "name": "Rachel",
+                        "category": "Generated",
+                        "description": "Warm and caring voice, perfect for grief counseling",
+                        "recommended_for_grief": True
+                    },
+                    {
+                        "voice_id": "AZnzlk1XvdvUeBnXmlld",
+                        "name": "Domi",
+                        "category": "Generated", 
+                        "description": "Confident and soothing voice",
+                        "recommended_for_grief": True
+                    }
+                ],
+                "total_count": 2,
+                "status": "limited",
+                "message": "Limited voice selection - API key not configured"
+            }
+            
         try:
             url = f"{self.base_url}/voices"
             headers = {
                 "xi-api-key": self.api_key
             }
             
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=30)
             
             if response.status_code == 200:
                 voices_data = response.json()
@@ -161,10 +219,22 @@ class VoiceService:
                     "status": "success"
                 }
             else:
-                raise Exception(f"ElevenLabs API error: {response.status_code} - {response.text}")
+                logger.error(f"ElevenLabs voices error: {response.status_code} - {response.text}")
+                return {
+                    "voices": [],
+                    "total_count": 0,
+                    "status": "error",
+                    "message": f"Failed to fetch voices: {response.status_code}"
+                }
             
         except Exception as e:
-            raise Exception(f"Failed to fetch voices: {str(e)}")
+            logger.error(f"List voices error: {str(e)}")
+            return {
+                "voices": [],
+                "total_count": 0,
+                "status": "error",
+                "message": f"Failed to fetch voices: {str(e)}"
+            }
 
     def _is_suitable_for_grief(self, voice: dict) -> bool:
         """Determine if a voice is suitable for grief counseling"""
@@ -203,6 +273,12 @@ class VoiceService:
 
     async def match_voice_style(self, text: str, reference_audio: UploadFile, user_id: int) -> dict:
         """Match voice style from reference audio using voice conversion"""
+        if not self.api_key:
+            return {
+                "status": "error",
+                "message": "Voice style matching not available - API key not configured"
+            }
+            
         try:
             # Save reference audio
             temp_filename = f"ref_{uuid.uuid4()}.{reference_audio.filename.split('.')[-1]}"
@@ -225,33 +301,49 @@ class VoiceService:
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
                 
-                return {
-                    "audio_file": synthesis_result["audio_file"],
-                    "filename": synthesis_result["filename"],
-                    "text": text,
-                    "voice_id": clone_result["voice_id"],
-                    "cloned_voice_name": clone_result["voice_name"],
-                    "message": "Voice style matched and speech generated successfully",
-                    "status": "success"
-                }
+                if synthesis_result["status"] == "success":
+                    return {
+                        "audio_file": synthesis_result["audio_file"],
+                        "filename": synthesis_result["filename"],
+                        "text": text,
+                        "voice_id": clone_result["voice_id"],
+                        "cloned_voice_name": clone_result["voice_name"],
+                        "message": "Voice style matched and speech generated successfully",
+                        "status": "success"
+                    }
+                else:
+                    return synthesis_result
             else:
-                raise Exception("Failed to clone voice for style matching")
+                return clone_result
             
         except Exception as e:
             # Clean up temp file if it exists
             if 'temp_path' in locals() and os.path.exists(temp_path):
                 os.remove(temp_path)
-            raise Exception(f"Voice style matching failed: {str(e)}")
+            logger.error(f"Voice style matching error: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Voice style matching failed: {str(e)}"
+            }
 
     async def get_voice_settings(self, voice_id: str) -> dict:
         """Get optimal voice settings for a specific voice"""
         try:
+            if not self.api_key:
+                # Return default settings
+                return {
+                    "stability": 0.5,
+                    "similarity_boost": 0.75,
+                    "style": 0.0,
+                    "use_speaker_boost": True
+                }
+                
             url = f"{self.base_url}/voices/{voice_id}/settings"
             headers = {
                 "xi-api-key": self.api_key
             }
             
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=30)
             
             if response.status_code == 200:
                 return response.json()
@@ -265,6 +357,7 @@ class VoiceService:
                 }
                 
         except Exception as e:
+            logger.error(f"Get voice settings error: {str(e)}")
             # Return default settings on error
             return {
                 "stability": 0.5,
@@ -275,13 +368,19 @@ class VoiceService:
 
     async def delete_voice(self, voice_id: str) -> dict:
         """Delete a cloned voice"""
+        if not self.api_key:
+            return {
+                "status": "error",
+                "message": "Voice deletion not available - API key not configured"
+            }
+            
         try:
             url = f"{self.base_url}/voices/{voice_id}"
             headers = {
                 "xi-api-key": self.api_key
             }
             
-            response = requests.delete(url, headers=headers)
+            response = requests.delete(url, headers=headers, timeout=30)
             
             if response.status_code == 200:
                 return {
@@ -289,7 +388,15 @@ class VoiceService:
                     "status": "success"
                 }
             else:
-                raise Exception(f"ElevenLabs API error: {response.status_code} - {response.text}")
+                logger.error(f"ElevenLabs delete error: {response.status_code} - {response.text}")
+                return {
+                    "status": "error",
+                    "message": f"Failed to delete voice: {response.status_code}"
+                }
                 
         except Exception as e:
-            raise Exception(f"Failed to delete voice: {str(e)}")
+            logger.error(f"Delete voice error: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Failed to delete voice: {str(e)}"
+            }
