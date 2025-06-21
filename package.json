@@ -4,13 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --https",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "backend": "cd backend && python -m uvicorn main:app --reload --port 8000",
-    "backend-https": "cd backend && python main.py",
-    "start": "concurrently \"npm run backend-https\" \"npm run dev\"",
+    "backend-https": "cd backend && python -m uvicorn main:app --reload --port 8000 --ssl-keyfile=certs/key.pem --ssl-certfile=certs/cert.pem",
+    "start": "concurrently \"npm run backend\" \"npm run dev\"",
+    "start-https": "concurrently \"npm run backend-https\" \"npm run dev\"",
     "start-http": "concurrently \"npm run backend\" \"vite\""
   },
   "dependencies": {
