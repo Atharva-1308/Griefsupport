@@ -12,3 +12,5 @@ aiofiles==23.2.1
 apscheduler==3.10.4
 elevenlabs==0.2.26
 pydantic==2.5.0
+pyopenssl==23.3.0
+cryptography==41.0.7
