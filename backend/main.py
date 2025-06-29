@@ -40,17 +40,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enhanced CORS middleware
+# Enhanced CORS middleware - Allow all origins for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://localhost:3000", 
-        "https://localhost:5173",
-        "https://localhost:3000",
-        "http://127.0.0.1:5173",
-        "https://127.0.0.1:5173"
-    ],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -153,31 +146,7 @@ def create_self_signed_cert():
         return None, None
 
 if __name__ == "__main__":
-    # Check for SSL certificates
-    cert_file, key_file = create_self_signed_cert()
-    
-    # Determine if we should use HTTPS
-    use_https = cert_file and key_file and os.path.exists(cert_file) and os.path.exists(key_file)
-    
-    if use_https:
-        logger.info("🚀 Starting server with HTTPS support...")
-        logger.info("📋 Using SSL certificates for secure communication")
-        logger.info("⚠️  Browser may show warnings about self-signed certificates - this is normal for development")
-        
-        try:
-            uvicorn.run(
-                app, 
-                host="0.0.0.0", 
-                port=8000,
-                ssl_keyfile=key_file,
-                ssl_certfile=cert_file,
-                log_level="info"
-            )
-        except Exception as e:
-            logger.error(f"❌ HTTPS server failed to start: {e}")
-            logger.info("🔄 Falling back to HTTP...")
-            uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
-    else:
-        logger.info("🚀 Starting server with HTTP...")
-        logger.info("💡 To enable HTTPS, install OpenSSL and restart the server")
-        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    # Always start with HTTP for better compatibility
+    logger.info("🚀 Starting server with HTTP...")
+    logger.info("💡 HTTP mode provides better compatibility and easier debugging")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

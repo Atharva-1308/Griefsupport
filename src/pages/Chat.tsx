@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api } from '../services/api';
-import { Send, Bot, User, Loader, Mic, MicOff, Volume2 } from 'lucide-react';
+import { api, checkBackendHealth } from '../services/api';
+import { Send, Bot, User, Loader, Mic, MicOff, Volume2, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -27,29 +27,59 @@ export const Chat: React.FC = () => {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  const [connectionError, setConnectionError] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchChatHistory();
-    // Add welcome message
-    setMessages([
-      {
-        type: 'bot',
-        content: "Hello, I'm Hope, your AI grief counselor. I'm here to listen and support you through your grief journey with compassion and understanding. How are you feeling today?",
-        timestamp: new Date()
-      }
-    ]);
+    initializeChat();
   }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  const initializeChat = async () => {
+    // Check backend connection
+    await checkConnection();
+    
+    // Fetch chat history
+    await fetchChatHistory();
+    
+    // Add welcome message if no history
+    if (messages.length === 0) {
+      setMessages([
+        {
+          type: 'bot',
+          content: "Hello, I'm Hope, your AI grief counselor. I'm here to listen and support you through your grief journey with compassion and understanding. How are you feeling today?",
+          timestamp: new Date()
+        }
+      ]);
+    }
+  };
+
+  const checkConnection = async () => {
+    try {
+      const isHealthy = await checkBackendHealth();
+      setBackendConnected(isHealthy);
+      if (!isHealthy) {
+        setConnectionError('Backend server is not responding. Please ensure it is running.');
+      } else {
+        setConnectionError('');
+      }
+    } catch (error) {
+      setBackendConnected(false);
+      setConnectionError('Failed to connect to backend server.');
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const fetchChatHistory = async () => {
+    if (backendConnected === false) return;
+    
     try {
       const response = await api.get('/chat/history?limit=10');
       // Convert history to chat messages format
@@ -67,10 +97,11 @@ export const Chat: React.FC = () => {
         });
       });
       if (historyMessages.length > 0) {
-        setMessages(prev => [...historyMessages, ...prev]);
+        setMessages(historyMessages);
       }
     } catch (error) {
       console.error('Failed to fetch chat history:', error);
+      // Don't show error to user for history fetch failure
     }
   };
 
@@ -111,6 +142,12 @@ export const Chat: React.FC = () => {
     const textToSend = messageText || inputMessage;
     if ((!textToSend.trim() && !audioBlob) || loading) return;
 
+    // Check backend connection before sending
+    if (backendConnected === false) {
+      toast.error('Cannot send message: Backend server is not connected');
+      return;
+    }
+
     const userMessage: ChatMessage = {
       type: 'user',
       content: textToSend,
@@ -131,7 +168,7 @@ export const Chat: React.FC = () => {
       
       // Generate voice response if voice is enabled
       let audioUrl = undefined;
-      if (voiceEnabled) {
+      if (voiceEnabled && backendConnected) {
         try {
           const voiceResponse = await api.post('/voice/synthesize', null, {
             params: { 
@@ -139,9 +176,13 @@ export const Chat: React.FC = () => {
               voice_id: "21m00Tcm4TlvDq8ikWAM" // Rachel - warm voice
             }
           });
-          audioUrl = `http://localhost:8000/${voiceResponse.data.audio_file}`;
+          
+          if (voiceResponse.data.status === 'success') {
+            audioUrl = `${api.defaults.baseURL?.replace('/api', '')}/${voiceResponse.data.audio_file}`;
+          }
         } catch (voiceError) {
           console.error('Voice synthesis failed:', voiceError);
+          // Don't show error to user, just continue without voice
         }
       }
 
@@ -162,12 +203,27 @@ export const Chat: React.FC = () => {
 
     } catch (error) {
       console.error('Failed to send message:', error);
-      const errorMessage: ChatMessage = {
+      
+      // Provide fallback response when backend is unavailable
+      let errorMessage = "I'm sorry, I'm having trouble connecting to my support systems right now. However, I want you to know that your feelings are completely valid and important.";
+      
+      if (error.name === 'NetworkError') {
+        errorMessage += "\n\nWhile I work on reconnecting, please remember:\n• You are not alone in your grief journey\n• It's okay to feel whatever you're feeling right now\n• Healing takes time, and there's no 'right' way to grieve\n• Your loved one's memory lives on through you";
+        
+        // Try to reconnect
+        setTimeout(checkConnection, 2000);
+      }
+      
+      errorMessage += "\n\nIf you're in immediate crisis, please reach out to:\n• 988 (Suicide & Crisis Lifeline)\n• Text HOME to 741741 (Crisis Text Line)\n• Your local emergency services";
+
+      const errorMessage2: ChatMessage = {
         type: 'bot',
-        content: "I'm sorry, I'm having trouble responding right now. Please know that your feelings are valid and important. If you're in crisis, please reach out to a crisis hotline or emergency services.",
+        content: errorMessage,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMessage2]);
+      
+      toast.error('Connection issue - provided offline support');
     } finally {
       setLoading(false);
     }
@@ -185,9 +241,21 @@ export const Chat: React.FC = () => {
     audio.play().catch(e => console.error('Audio playback failed:', e));
   };
 
+  const retryConnection = () => {
+    checkConnection();
+    toast.promise(
+      checkBackendHealth(),
+      {
+        loading: 'Checking connection...',
+        success: 'Connected to server!',
+        error: 'Still unable to connect'
+      }
+    );
+  };
+
   return (
     <div className="max-w-4xl mx-auto h-[calc(100vh-200px)] flex flex-col">
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-t-xl shadow-lg p-6">
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 text-white rounded-t-xl shadow-lg p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Bot className="h-8 w-8" />
@@ -199,22 +267,59 @@ export const Chat: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            {/* Connection Status */}
+            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
+              backendConnected === true 
+                ? 'bg-green-100 text-green-800' 
+                : backendConnected === false 
+                ? 'bg-red-100 text-red-800' 
+                : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {backendConnected === true ? (
+                <>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Connected</span>
+                </>
+              ) : backendConnected === false ? (
+                <>
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Offline</span>
+                  <button onClick={retryConnection} className="ml-1">
+                    <RefreshCw className="h-3 w-3" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Loader className="h-4 w-4 animate-spin" />
+                  <span>Connecting...</span>
+                </>
+              )}
+            </div>
+            
             <button
               onClick={() => setVoiceEnabled(!voiceEnabled)}
+              disabled={backendConnected === false}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 voiceEnabled 
                   ? 'bg-white text-purple-600' 
                   : 'bg-purple-500 text-white hover:bg-purple-400'
-              }`}
+              } ${backendConnected === false ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Volume2 className="h-4 w-4" />
               <span className="text-sm">{voiceEnabled ? 'Voice On' : 'Voice Off'}</span>
             </button>
           </div>
         </div>
+        
+        {connectionError && (
+          <div className="mt-3 p-2 bg-red-100 text-red-800 rounded-lg text-sm">
+            <AlertCircle className="h-4 w-4 inline mr-2" />
+            {connectionError}
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 bg-white overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 bg-white dark:bg-gray-900 overflow-y-auto p-6 space-y-4">
         <AnimatePresence>
           {messages.map((message, index) => (
             <motion.div
@@ -241,19 +346,19 @@ export const Chat: React.FC = () => {
                 <div className={`rounded-2xl p-4 shadow-lg ${
                   message.type === 'user'
                     ? 'bg-purple-600 text-white'
-                    : 'bg-gray-50 text-gray-800 border border-gray-200'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'
                 }`}>
                   <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                   <div className="flex items-center justify-between mt-3">
                     <p className={`text-xs ${
-                      message.type === 'user' ? 'text-purple-200' : 'text-gray-500'
+                      message.type === 'user' ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {format(message.timestamp, 'HH:mm')}
                     </p>
                     {message.audioUrl && (
                       <button
                         onClick={() => playAudio(message.audioUrl!)}
-                        className="flex items-center space-x-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full hover:bg-blue-200 transition-colors"
+                        className="flex items-center space-x-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
                       >
                         <Volume2 className="h-3 w-3" />
                         <span>Play</span>
@@ -276,10 +381,10 @@ export const Chat: React.FC = () => {
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center">
                 <Bot className="h-5 w-5" />
               </div>
-              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center space-x-2">
                   <Loader className="h-4 w-4 animate-spin text-purple-600" />
-                  <span className="text-gray-600">Hope is thinking...</span>
+                  <span className="text-gray-600 dark:text-gray-300">Hope is thinking...</span>
                 </div>
               </div>
             </div>
@@ -289,7 +394,7 @@ export const Chat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="bg-white rounded-b-xl shadow-lg p-6 border-t border-gray-200">
+      <div className="bg-white dark:bg-gray-900 rounded-b-xl shadow-lg p-6 border-t border-gray-200 dark:border-gray-700">
         <div className="flex space-x-4">
           <div className="flex-1">
             <textarea
@@ -297,24 +402,27 @@ export const Chat: React.FC = () => {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Share what's on your mind... I'm here to listen with compassion and understanding."
-              className="w-full resize-none border border-gray-300 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full resize-none border border-gray-300 dark:border-gray-600 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               rows={3}
               disabled={loading}
             />
             {audioBlob && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800 text-sm">✓ Voice message recorded</p>
+              <div className="mt-2 p-2 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg">
+                <p className="text-green-800 dark:text-green-200 text-sm">✓ Voice message recorded</p>
               </div>
             )}
           </div>
           <div className="flex flex-col space-y-2">
             <button
               onClick={isRecording ? stopRecording : startRecording}
+              disabled={backendConnected === false}
               className={`p-3 rounded-xl transition-all duration-200 ${
                 isRecording
                   ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                  : 'bg-gray-100 hover:bg-gray-200'
-              } text-gray-700 flex items-center justify-center`}
+                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+              } text-gray-700 dark:text-gray-300 flex items-center justify-center ${
+                backendConnected === false ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               {isRecording ? (
                 <MicOff className="h-5 w-5 text-white" />
@@ -332,11 +440,11 @@ export const Chat: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Press Enter to send, Shift+Enter for new line
           </p>
-          <p className="text-xs text-gray-500">
-            {voiceEnabled ? '🔊 Voice responses enabled' : '🔇 Text only'}
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {voiceEnabled && backendConnected ? '🔊 Voice responses enabled' : '🔇 Text only'}
           </p>
         </div>
       </div>

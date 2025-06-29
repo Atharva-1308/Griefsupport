@@ -14,7 +14,9 @@
     "start-https": "concurrently \"npm run backend-https\" \"npm run dev\"",
     "start-http": "concurrently \"npm run backend\" \"vite --host 0.0.0.0\"",
     "install-backend": "cd backend && pip install -r requirements.txt",
-    "setup": "npm install && npm run install-backend"
+    "setup": "npm install && npm run install-backend",
+    "check-backend": "cd backend && python -c \"import uvicorn; print('✅ Backend dependencies OK')\"",
+    "fix-backend": "cd backend && pip install uvicorn fastapi python-multipart sqlalchemy alembic python-jose passlib python-dotenv requests websockets aiofiles apscheduler pydantic"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",

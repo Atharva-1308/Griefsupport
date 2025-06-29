@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api } from '../services/api';
-import { Send, Bot, User, Loader, Mic, MicOff, Volume2, MessageCircle } from 'lucide-react';
+import { api, checkBackendHealth } from '../services/api';
+import { Send, Bot, User, Loader, Mic, MicOff, Volume2, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -22,12 +22,25 @@ export const AnonymousChat: React.FC = () => {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  const [connectionError, setConnectionError] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    initializeChat();
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const initializeChat = async () => {
     // Generate session ID for anonymous user
     const newSessionId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     setSessionId(newSessionId);
+    
+    // Check backend connection
+    await checkConnection();
     
     // Add welcome message
     setMessages([
@@ -37,11 +50,22 @@ export const AnonymousChat: React.FC = () => {
         timestamp: new Date()
       }
     ]);
-  }, []);
+  };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const checkConnection = async () => {
+    try {
+      const isHealthy = await checkBackendHealth();
+      setBackendConnected(isHealthy);
+      if (!isHealthy) {
+        setConnectionError('Backend server is not responding. Please ensure it is running.');
+      } else {
+        setConnectionError('');
+      }
+    } catch (error) {
+      setBackendConnected(false);
+      setConnectionError('Failed to connect to backend server.');
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -83,6 +107,12 @@ export const AnonymousChat: React.FC = () => {
   const sendMessage = async (messageText?: string, isVoiceMessage = false) => {
     const textToSend = messageText || inputMessage;
     if ((!textToSend.trim() && !audioBlob) || loading) return;
+
+    // Check backend connection before sending
+    if (backendConnected === false) {
+      toast.error('Cannot send message: Backend server is not connected');
+      return;
+    }
 
     const userMessage: ChatMessage = {
       type: 'user',
@@ -126,7 +156,7 @@ export const AnonymousChat: React.FC = () => {
       
       // Generate voice response if voice is enabled
       let audioUrl = undefined;
-      if (voiceEnabled) {
+      if (voiceEnabled && backendConnected) {
         try {
           const voiceResponse = await api.post('/voice/synthesize', null, {
             params: { 
@@ -134,9 +164,13 @@ export const AnonymousChat: React.FC = () => {
               voice_id: "21m00Tcm4TlvDq8ikWAM" // Rachel - warm voice
             }
           });
-          audioUrl = `http://localhost:8000/${voiceResponse.data.audio_file}`;
+          
+          if (voiceResponse.data.status === 'success') {
+            audioUrl = `${api.defaults.baseURL?.replace('/api', '')}/${voiceResponse.data.audio_file}`;
+          }
         } catch (voiceError) {
           console.error('Voice synthesis failed:', voiceError);
+          // Don't show error to user, just continue without voice
         }
       }
 
@@ -158,18 +192,17 @@ export const AnonymousChat: React.FC = () => {
     } catch (error) {
       console.error('Failed to send message:', error);
       
-      // Provide more specific error messages
-      let errorMessage = "I'm sorry, I'm having trouble responding right now. Please know that your feelings are valid and important.";
+      // Provide fallback response when backend is unavailable
+      let errorMessage = "I'm sorry, I'm having trouble connecting to my support systems right now. However, I want you to know that your feelings are completely valid and important.";
       
-      if (error.name === 'NetworkError' || error.message?.includes('Network Error')) {
-        errorMessage = "I'm having trouble connecting to the server. Please make sure you're connected to the internet and try again. If the problem persists, the server might be temporarily unavailable.";
-        toast.error('Connection failed. Please check your internet connection.');
-      } else if (error.code === 'ECONNREFUSED') {
-        errorMessage = "The support service is temporarily unavailable. Please try again in a few moments.";
-        toast.error('Service temporarily unavailable');
+      if (error.name === 'NetworkError') {
+        errorMessage += "\n\nWhile I work on reconnecting, please remember:\n• You are not alone in your grief journey\n• It's okay to feel whatever you're feeling right now\n• Healing takes time, and there's no 'right' way to grieve\n• Your loved one's memory lives on through you";
+        
+        // Try to reconnect
+        setTimeout(checkConnection, 2000);
       }
       
-      errorMessage += "\n\nIf you're in crisis, please reach out to a crisis hotline: 988 (Suicide & Crisis Lifeline) or text HOME to 741741.";
+      errorMessage += "\n\nIf you're in immediate crisis, please reach out to:\n• 988 (Suicide & Crisis Lifeline)\n• Text HOME to 741741 (Crisis Text Line)\n• Your local emergency services";
 
       const errorBotMessage: ChatMessage = {
         type: 'bot',
@@ -177,6 +210,8 @@ export const AnonymousChat: React.FC = () => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorBotMessage]);
+      
+      toast.error('Connection issue - provided offline support');
     } finally {
       setLoading(false);
     }
@@ -194,6 +229,18 @@ export const AnonymousChat: React.FC = () => {
     audio.play().catch(e => console.error('Audio playback failed:', e));
   };
 
+  const retryConnection = () => {
+    checkConnection();
+    toast.promise(
+      checkBackendHealth(),
+      {
+        loading: 'Checking connection...',
+        success: 'Connected to server!',
+        error: 'Still unable to connect'
+      }
+    );
+  };
+
   return (
     <div className="max-w-4xl mx-auto h-[calc(100vh-200px)] flex flex-col">
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 text-white rounded-t-xl shadow-lg p-6">
@@ -208,22 +255,59 @@ export const AnonymousChat: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            {/* Connection Status */}
+            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
+              backendConnected === true 
+                ? 'bg-green-100 text-green-800' 
+                : backendConnected === false 
+                ? 'bg-red-100 text-red-800' 
+                : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {backendConnected === true ? (
+                <>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Connected</span>
+                </>
+              ) : backendConnected === false ? (
+                <>
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Offline</span>
+                  <button onClick={retryConnection} className="ml-1">
+                    <RefreshCw className="h-3 w-3" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Loader className="h-4 w-4 animate-spin" />
+                  <span>Connecting...</span>
+                </>
+              )}
+            </div>
+            
             <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
               🔒 Anonymous
             </div>
             <button
               onClick={() => setVoiceEnabled(!voiceEnabled)}
+              disabled={backendConnected === false}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 voiceEnabled 
                   ? 'bg-white text-purple-600' 
                   : 'bg-purple-500 text-white hover:bg-purple-400'
-              }`}
+              } ${backendConnected === false ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Volume2 className="h-4 w-4" />
               <span className="text-sm">{voiceEnabled ? 'Voice On' : 'Voice Off'}</span>
             </button>
           </div>
         </div>
+        
+        {connectionError && (
+          <div className="mt-3 p-2 bg-red-100 text-red-800 rounded-lg text-sm">
+            <AlertCircle className="h-4 w-4 inline mr-2" />
+            {connectionError}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 bg-white dark:bg-gray-900 overflow-y-auto p-6 space-y-4">
@@ -329,11 +413,14 @@ export const AnonymousChat: React.FC = () => {
           <div className="flex flex-col space-y-2">
             <button
               onClick={isRecording ? stopRecording : startRecording}
+              disabled={backendConnected === false}
               className={`p-3 rounded-xl transition-all duration-200 ${
                 isRecording
                   ? 'bg-red-500 hover:bg-red-600 animate-pulse'
                   : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-              } text-gray-700 dark:text-gray-300 flex items-center justify-center`}
+              } text-gray-700 dark:text-gray-300 flex items-center justify-center ${
+                backendConnected === false ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               {isRecording ? (
                 <MicOff className="h-5 w-5 text-white" />
@@ -355,7 +442,7 @@ export const AnonymousChat: React.FC = () => {
             Press Enter to send, Shift+Enter for new line • Completely anonymous and private
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {voiceEnabled ? '🔊 Voice responses enabled' : '🔇 Text only'}
+            {voiceEnabled && backendConnected ? '🔊 Voice responses enabled' : '🔇 Text only'}
           </p>
         </div>
       </div>
