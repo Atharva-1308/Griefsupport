@@ -1,4 +1,4 @@
-# 🚀 Complete Setup Instructions for GriefCare AI
+# 🚀 Complete Setup Instructions for GriefGuide
 
 ## 📋 Prerequisites
 

@@ -45,7 +45,7 @@ def create_certificates():
         subprocess.run([
             "openssl", "req", "-x509", "-newkey", "rsa:2048", 
             "-keyout", str(key_file), "-out", str(cert_file), "-days", "365", "-nodes",
-            "-subj", "/C=US/ST=Development/L=Local/O=GriefCare-Frontend/CN=localhost"
+            "-subj", "/C=US/ST=Development/L=Local/O=GriefGuide-Frontend/CN=localhost"
         ], check=True, capture_output=True)
         
         print(f"✅ Frontend SSL certificates created successfully!")

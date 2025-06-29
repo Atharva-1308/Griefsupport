@@ -1,8 +1,9 @@
 {
-  "name": "grief-ai-chatbot",
+  "name": "griefguide",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "GriefGuide - Compassionate AI support for grief and healing",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",

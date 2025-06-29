@@ -35,7 +35,7 @@ for directory in directories:
     os.makedirs(directory, exist_ok=True)
 
 app = FastAPI(
-    title="Grief AI Chatbot API",
+    title="GriefGuide API",
     description="A comprehensive grief support platform with AI chatbot, journaling, and peer support",
     version="1.0.0"
 )
@@ -88,7 +88,7 @@ for router, prefix, tags in routers:
 @app.get("/")
 async def root():
     return {
-        "message": "Grief AI Chatbot API is running", 
+        "message": "GriefGuide API is running", 
         "status": "healthy",
         "version": "1.0.0"
     }
@@ -136,7 +136,7 @@ def create_self_signed_cert():
         subprocess.run([
             "openssl", "req", "-x509", "-newkey", "rsa:2048", 
             "-keyout", str(key_file), "-out", str(cert_file), "-days", "365", "-nodes",
-            "-subj", "/C=US/ST=State/L=City/O=GriefCare/CN=localhost"
+            "-subj", "/C=US/ST=State/L=City/O=GriefGuide/CN=localhost"
         ], check=True, capture_output=True)
         
         logger.info(f"✅ Self-signed certificate created: {cert_file}")

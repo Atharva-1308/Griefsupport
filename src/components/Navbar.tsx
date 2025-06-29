@@ -20,7 +20,7 @@ export const Navbar: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center space-x-2">
             <Heart className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-            <span className="text-xl font-bold text-gray-800 dark:text-gray-200">GriefCare AI</span>
+            <span className="text-xl font-bold text-gray-800 dark:text-gray-200">GriefGuide</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">

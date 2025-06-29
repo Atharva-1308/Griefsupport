@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Startup script to ensure all dependencies are installed and configured properly.
-This script handles the complete setup process for the GriefCare AI backend.
+This script handles the complete setup process for the GriefGuide backend.
 """
 
 import os
@@ -145,7 +145,7 @@ def initialize_database():
 
 def main():
     """Main startup function"""
-    logger.info("🚀 Starting GriefCare AI Backend Setup...")
+    logger.info("🚀 Starting GriefGuide Backend Setup...")
     
     # Check Python version
     if not check_python_version():
