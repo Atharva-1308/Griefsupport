@@ -1,13 +1,14 @@
 """
 Enhanced AI Chatbot service for grief counseling conversations using OpenAI GPT-4.
-Improved error handling and fallback responses.
+Improved error handling, fallback responses, and API key management.
 """
 
 import openai
 import os
 from dotenv import load_dotenv
-from typing import List, Dict
+from typing import List, Dict, Optional
 import logging
+import json
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -15,15 +16,21 @@ logger = logging.getLogger(__name__)
 class ChatService:
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
-        if self.api_key:
-            self.client = openai.OpenAI(api_key=self.api_key)
-            logger.info("✅ OpenAI client initialized")
+        self.client = None
+        
+        if self.api_key and self.api_key != "sk-your-openai-api-key-here":
+            try:
+                self.client = openai.OpenAI(api_key=self.api_key)
+                logger.info("✅ OpenAI client initialized successfully")
+                self._test_api_connection()
+            except Exception as e:
+                logger.warning(f"⚠️  OpenAI client initialization failed: {e}")
+                self.client = None
         else:
-            self.client = None
-            logger.warning("⚠️  OpenAI API key not found - using fallback responses")
+            logger.warning("⚠️  OpenAI API key not configured - using fallback responses")
             
         self.system_prompt = """
-        You are a compassionate and professional AI grief counselor named "Hope". Your role is to provide emotional support, 
+        You are Hope, a compassionate and professional AI grief counselor. Your role is to provide emotional support, 
         guidance, and resources to people who are grieving. You should:
         
         CORE PRINCIPLES:
@@ -76,6 +83,23 @@ class ChatService:
         
         # Conversation context to maintain continuity
         self.conversation_history: Dict[str, List[Dict]] = {}
+
+    def _test_api_connection(self):
+        """Test the OpenAI API connection"""
+        try:
+            if self.client:
+                # Test with a simple completion
+                response = self.client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": "Hello"}],
+                    max_tokens=10
+                )
+                logger.info("✅ OpenAI API connection test successful")
+                return True
+        except Exception as e:
+            logger.warning(f"⚠️  OpenAI API connection test failed: {e}")
+            self.client = None
+            return False
 
     async def process_message(self, message: str, user_id: str) -> str:
         """Process a user message and return AI response using OpenAI GPT-4 or fallback"""
@@ -281,3 +305,11 @@ Remember, healing doesn't mean forgetting or 'getting over' your loss. It means 
         """Clear conversation history for a user"""
         if user_id in self.conversation_history:
             del self.conversation_history[user_id]
+
+    def get_api_status(self) -> dict:
+        """Get the current API status"""
+        return {
+            "openai_configured": bool(self.client),
+            "api_key_present": bool(self.api_key and self.api_key != "sk-your-openai-api-key-here"),
+            "fallback_mode": not bool(self.client)
+        }

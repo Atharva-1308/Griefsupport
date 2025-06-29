@@ -13,10 +13,13 @@
     "start": "concurrently \"npm run backend\" \"npm run dev\"",
     "start-https": "concurrently \"npm run backend-https\" \"npm run dev\"",
     "start-http": "concurrently \"npm run backend\" \"vite --host 0.0.0.0\"",
-    "install-backend": "cd backend && pip3 install -r requirements.txt",
+    "install-backend": "cd backend && python3 -m pip install -r requirements.txt",
     "setup": "npm install && npm run install-backend",
+    "setup-backend": "cd backend && python3 startup.py",
     "check-backend": "cd backend && python -c \"import uvicorn; print('✅ Backend dependencies OK')\"",
-    "fix-backend": "cd backend && pip3 install uvicorn fastapi python-multipart sqlalchemy alembic python-jose passlib python-dotenv requests websockets aiofiles apscheduler pydantic"
+    "fix-backend": "cd backend && python3 -m pip install uvicorn fastapi python-multipart sqlalchemy alembic python-jose passlib python-dotenv requests websockets aiofiles apscheduler pydantic openai elevenlabs",
+    "full-setup": "npm install && npm run fix-backend && npm run setup-backend",
+    "health-check": "curl -f http://localhost:8000/api/health || echo 'Backend not running'"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",
