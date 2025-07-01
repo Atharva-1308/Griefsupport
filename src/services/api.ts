@@ -2,14 +2,15 @@ import axios from 'axios';
 
 // Determine the correct backend URL based on environment
 const getBaseURL = () => {
-  // In development, try to detect if we're using HTTPS or HTTP
+  // Check if we're in development and what protocol the frontend is using
   const isHTTPS = window.location.protocol === 'https:';
   const hostname = window.location.hostname;
   
   // For localhost development
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Try HTTPS first, fallback to HTTP
-    return isHTTPS ? 'https://localhost:8000/api' : 'http://localhost:8000/api';
+    // Match the frontend protocol - if frontend is HTTPS, use HTTPS for backend
+    const protocol = isHTTPS ? 'https' : 'http';
+    return `${protocol}://localhost:8000/api`;
   }
   
   // For production/deployed environments
@@ -22,6 +23,10 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000,
+  // Allow self-signed certificates in development
+  ...(process.env.NODE_ENV === 'development' && {
+    httpsAgent: false
+  })
 });
 
 // Add retry logic for network failures
@@ -59,16 +64,6 @@ api.interceptors.response.use(
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
       
-      // Try different protocol if first attempt fails
-      if (retryCount === 2) {
-        const currentURL = originalRequest.baseURL;
-        if (currentURL?.includes('https://')) {
-          originalRequest.baseURL = currentURL.replace('https://', 'http://');
-        } else if (currentURL?.includes('http://')) {
-          originalRequest.baseURL = currentURL.replace('http://', 'https://');
-        }
-      }
-      
       return api(originalRequest);
     }
     
@@ -95,8 +90,15 @@ api.interceptors.response.use(
 // Health check function
 export const checkBackendHealth = async (): Promise<boolean> => {
   try {
-    const response = await axios.get(`${getBaseURL().replace('/api', '')}/api/health`, {
+    const baseURL = getBaseURL();
+    const healthURL = baseURL.replace('/api', '/api/health');
+    
+    const response = await axios.get(healthURL, {
       timeout: 5000,
+      // Allow self-signed certificates in development
+      ...(process.env.NODE_ENV === 'development' && {
+        httpsAgent: false
+      })
     });
     return response.status === 200;
   } catch (error) {
@@ -109,8 +111,13 @@ export const checkBackendHealth = async (): Promise<boolean> => {
 export const testConnection = async (): Promise<{ success: boolean; url: string; error?: string }> => {
   const baseURL = getBaseURL();
   try {
-    const response = await axios.get(`${baseURL.replace('/api', '')}/api/health`, {
+    const healthURL = baseURL.replace('/api', '/api/health');
+    const response = await axios.get(healthURL, {
       timeout: 5000,
+      // Allow self-signed certificates in development
+      ...(process.env.NODE_ENV === 'development' && {
+        httpsAgent: false
+      })
     });
     return { success: true, url: baseURL };
   } catch (error) {

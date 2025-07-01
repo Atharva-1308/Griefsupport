@@ -6,21 +6,24 @@
   "description": "GriefGuide - Compassionate AI support for grief and healing",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev-https": "vite --host 0.0.0.0 --https",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "backend": "cd backend && python -m uvicorn main:app --reload --port 8000 --host 0.0.0.0",
     "backend-https": "cd backend && python -m uvicorn main:app --reload --port 8000 --host 0.0.0.0 --ssl-keyfile=certs/key.pem --ssl-certfile=certs/cert.pem",
     "start": "concurrently \"npm run backend\" \"npm run dev\"",
-    "start-https": "concurrently \"npm run backend-https\" \"npm run dev\"",
+    "start-https": "concurrently \"npm run backend-https\" \"npm run dev-https\"",
     "start-http": "concurrently \"npm run backend\" \"vite --host 0.0.0.0\"",
     "install-backend": "cd backend && python3 -m pip install -r requirements.txt",
     "setup": "npm install && npm run install-backend",
     "setup-backend": "cd backend && python3 startup.py",
+    "setup-certs": "python3 create_frontend_certs.py",
     "check-backend": "cd backend && python -c \"import uvicorn; print('✅ Backend dependencies OK')\"",
     "fix-backend": "cd backend && python3 -m pip install uvicorn fastapi python-multipart sqlalchemy alembic python-jose passlib python-dotenv requests websockets aiofiles apscheduler pydantic openai elevenlabs",
-    "full-setup": "npm install && npm run fix-backend && npm run setup-backend",
-    "health-check": "curl -f http://localhost:8000/api/health || echo 'Backend not running'"
+    "full-setup": "npm install && npm run fix-backend && npm run setup-backend && npm run setup-certs",
+    "health-check": "curl -f http://localhost:8000/api/health || echo 'Backend not running'",
+    "health-check-https": "curl -f -k https://localhost:8000/api/health || echo 'Backend not running'"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",
