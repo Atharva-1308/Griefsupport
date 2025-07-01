@@ -2,15 +2,11 @@ import axios from 'axios';
 
 // Determine the correct backend URL based on environment
 const getBaseURL = () => {
-  // Check if we're in development and what protocol the frontend is using
-  const isHTTPS = window.location.protocol === 'https:';
   const hostname = window.location.hostname;
   
-  // For localhost development
+  // For localhost development - always use HTTP for backend
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Match the frontend protocol - if frontend is HTTPS, use HTTPS for backend
-    const protocol = isHTTPS ? 'https' : 'http';
-    return `${protocol}://localhost:8000/api`;
+    return 'http://localhost:8000/api';
   }
   
   // For production/deployed environments
