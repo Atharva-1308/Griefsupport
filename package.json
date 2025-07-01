@@ -23,7 +23,9 @@
     "lucide-react": "^0.446.0",
     "axios": "^1.6.0",
     "recharts": "^2.8.0",
-    "@headlessui/react": "^1.7.17"
+    "@headlessui/react": "^1.7.17",
+    "react-hot-toast": "^2.4.1",
+    "framer-motion": "^10.16.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
