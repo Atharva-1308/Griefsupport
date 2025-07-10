@@ -25,9 +25,9 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 transition-colors">
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 transition-colors overflow-x-hidden">
               <Navbar />
-              <main className="container mx-auto px-4 py-8">
+              <main className="w-full px-4 py-4 md:py-8">
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/anonymous-chat" element={<AnonymousChat />} />

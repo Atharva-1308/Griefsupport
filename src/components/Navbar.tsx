@@ -26,6 +26,9 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-6">
             {user ? (
               <>
+                <Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  Home
+                </Link>
                 <Link to="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                   Dashboard
                 </Link>
@@ -65,6 +68,9 @@ export const Navbar: React.FC = () => {
               </>
             ) : (
               <>
+                <Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  Home
+                </Link>
                 <Link to="/anonymous-chat" className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                   <MessageCircle className="h-4 w-4" />
                   <span>Anonymous Chat</span>
@@ -94,7 +100,74 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center space-x-2">
+          <div className="md:hidden">
+            <div className="flex items-center space-x-2">
+              <Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors p-2">
+                Home
+              </Link>
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Toggle theme"
+              >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Mobile Navigation Menu */}
+        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 pt-4 pb-2">
+          <div className="flex flex-wrap gap-4 justify-center">
+            {user ? (
+              <>
+                <Link to="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  Dashboard
+                </Link>
+                <Link to="/chat" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  AI Chat
+                </Link>
+                <Link to="/journal" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  Journal
+                </Link>
+                <Link to="/mood" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  Mood
+                </Link>
+                <Link to="/support" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  Support
+                </Link>
+                <Link to="/resources" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  Resources
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors text-sm"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/anonymous-chat" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  Anonymous Chat
+                </Link>
+                <Link to="/resources" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  Resources
+                </Link>
+                <Link to="/login" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm">
+                  Login
+                </Link>
+                <Link to="/register" className="bg-purple-600 dark:bg-purple-700 text-white px-3 py-1 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-800 transition-colors text-sm">
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"

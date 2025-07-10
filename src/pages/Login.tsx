@@ -35,7 +35,7 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12">
+    <div className="min-h-screen flex items-center justify-center py-8 px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <Heart className="mx-auto h-12 w-12 text-purple-600" />
@@ -52,7 +52,7 @@ export const Login: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAnonymous(false)}
-              className={`flex-1 py-2 px-4 text-sm font-medium rounded-l-lg border ${
+              className={`flex-1 py-2 px-2 md:px-4 text-xs md:text-sm font-medium rounded-l-lg border ${
                 !isAnonymous
                   ? 'bg-purple-600 text-white border-purple-600'
                   : 'bg-gray-50 text-gray-700 border-gray-300'
@@ -63,7 +63,7 @@ export const Login: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAnonymous(true)}
-              className={`flex-1 py-2 px-4 text-sm font-medium rounded-r-lg border-t border-r border-b ${
+              className={`flex-1 py-2 px-2 md:px-4 text-xs md:text-sm font-medium rounded-r-lg border-t border-r border-b ${
                 isAnonymous
                   ? 'bg-purple-600 text-white border-purple-600'
                   : 'bg-gray-50 text-gray-700 border-gray-300'

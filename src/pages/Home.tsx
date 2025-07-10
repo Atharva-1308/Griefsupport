@@ -40,44 +40,44 @@ export const Home: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="py-20 text-center">
+      <section className="py-12 md:py-20 text-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="max-w-4xl mx-auto"
         >
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-800 dark:text-gray-200 mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 dark:text-gray-200 mb-6">
             You're Not Alone in Your
             <span className="text-purple-600 dark:text-purple-400 block">Grief Journey</span>
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
             GriefCare AI provides compassionate support through AI counseling, voice interaction, 
             journaling, mood tracking, and peer connections. Take the first step toward healing.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               to="/anonymous-chat"
-              className="bg-gradient-to-r from-green-600 to-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-blue-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg text-base md:text-lg font-semibold hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg text-center"
             >
               🔒 Start Anonymous Chat
             </Link>
             <Link
               to="/register"
-              className="bg-purple-600 dark:bg-purple-700 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-purple-700 dark:hover:bg-purple-800 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              className="w-full sm:w-auto bg-purple-600 dark:bg-purple-700 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg text-base md:text-lg font-semibold hover:bg-purple-700 dark:hover:bg-purple-800 transition-all duration-300 transform hover:scale-105 shadow-lg text-center"
             >
               Create Account
             </Link>
             <Link
               to="/login"
-              className="border-2 border-purple-600 dark:border-purple-400 text-purple-600 dark:text-purple-400 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-purple-50 dark:hover:bg-purple-900 transition-all duration-300"
+              className="w-full sm:w-auto border-2 border-purple-600 dark:border-purple-400 text-purple-600 dark:text-purple-400 px-6 md:px-8 py-3 md:py-4 rounded-lg text-base md:text-lg font-semibold hover:bg-purple-50 dark:hover:bg-purple-900 transition-all duration-300 text-center"
             >
               Sign In
             </Link>
           </div>
           
           {/* Anonymous Chat Highlight */}
-          <div className="mt-8 p-4 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-xl">
+          <div className="mt-8 p-4 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-xl mx-4 sm:mx-0">
             <div className="flex items-center justify-center space-x-2 text-green-800 dark:text-green-200">
               <Shield className="h-5 w-5" />
               <span className="font-medium">No signup required for anonymous support</span>
@@ -90,7 +90,7 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white dark:bg-gray-800 transition-colors">
+      <section className="py-12 md:py-20 bg-white dark:bg-gray-800 transition-colors px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -99,15 +99,15 @@ export const Home: React.FC = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">
               Comprehensive Grief Support
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300">
               Everything you need to process grief and find your path to healing
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
@@ -117,11 +117,11 @@ export const Home: React.FC = () => {
                 viewport={{ once: true }}
                 className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900 dark:to-blue-900 p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-purple-100 dark:border-purple-800"
               >
-                <feature.icon className="h-12 w-12 text-purple-600 dark:text-purple-400 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                <feature.icon className="h-10 md:h-12 w-10 md:w-12 text-purple-600 dark:text-purple-400 mb-4" />
+                <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
                   {feature.description}
                 </p>
               </motion.div>
@@ -131,7 +131,7 @@ export const Home: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 text-white">
+      <section className="py-12 md:py-20 bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 text-white px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -139,24 +139,24 @@ export const Home: React.FC = () => {
           viewport={{ once: true }}
           className="max-w-4xl mx-auto text-center"
         >
-          <Heart className="h-16 w-16 mx-auto mb-6 opacity-80" />
-          <h2 className="text-4xl font-bold mb-6">
+          <Heart className="h-12 md:h-16 w-12 md:w-16 mx-auto mb-6 opacity-80" />
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6">
             Take the First Step Today
           </h2>
-          <p className="text-xl mb-8 opacity-90">
+          <p className="text-lg md:text-xl mb-8 opacity-90">
             Grief is a journey, not a destination. Let us walk alongside you 
             with compassionate AI support and a caring community.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               to="/anonymous-chat"
-              className="bg-white text-purple-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              className="w-full sm:w-auto bg-white text-purple-600 px-6 md:px-8 py-3 md:py-4 rounded-lg text-base md:text-lg font-semibold hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg text-center"
             >
               🔒 Try Anonymous Chat
             </Link>
             <Link
               to="/register"
-              className="bg-purple-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-purple-400 transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-white"
+              className="w-full sm:w-auto bg-purple-500 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg text-base md:text-lg font-semibold hover:bg-purple-400 transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-white text-center"
             >
               Create Full Account
             </Link>
