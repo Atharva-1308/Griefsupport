@@ -5,7 +5,7 @@ import { Heart, Eye, EyeOff, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Login: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -20,15 +20,32 @@ export const Login: React.FC = () => {
 
     try {
       if (isAnonymous) {
-        await loginAnonymous(username);
+        if (!emailOrUsername.trim()) {
+          toast.error('Please enter your anonymous username');
+          setLoading(false);
+          return;
+        }
+        await loginAnonymous(emailOrUsername);
         toast.success('Logged in anonymously');
       } else {
-        await login(username, password);
+        if (!emailOrUsername.trim()) {
+          toast.error('Please enter your email or username');
+          setLoading(false);
+          return;
+        }
+        if (!password.trim()) {
+          toast.error('Please enter your password');
+          setLoading(false);
+          return;
+        }
+        await login(emailOrUsername, password);
         toast.success('Logged in successfully');
       }
       navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Login failed');
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Login failed';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,17 +93,17 @@ export const Login: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username {!isAnonymous && '/ Email'}
+              <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-700">
+                {isAnonymous ? 'Anonymous Username' : 'Email Address'}
               </label>
               <input
-                id="username"
-                type="text"
+                id="emailOrUsername"
+                type={isAnonymous ? "text" : "email"}
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                placeholder={isAnonymous ? "Enter your username" : "Username or email"}
+                placeholder={isAnonymous ? "Enter your anonymous username" : "Enter your email address"}
               />
             </div>
 

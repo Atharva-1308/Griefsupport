@@ -5,7 +5,6 @@ import { Heart, Eye, EyeOff, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Register: React.FC = () => {
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,28 +15,67 @@ export const Register: React.FC = () => {
   const { register, registerAnonymous, loginAnonymous } = useAuth();
   const navigate = useNavigate();
 
+  const generateRandomUsername = () => {
+    const adjectives = ['Kind', 'Gentle', 'Brave', 'Strong', 'Peaceful', 'Caring', 'Hopeful', 'Wise'];
+    const nouns = ['Heart', 'Soul', 'Spirit', 'Journey', 'Path', 'Light', 'Hope', 'Peace'];
+    const randomNum = Math.floor(Math.random() * 1000);
+    
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    
+    return `${adjective}${noun}${randomNum}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (isAnonymous) {
-        await registerAnonymous(username);
-        await loginAnonymous(username);
+        // Generate a random username for anonymous users
+        const randomUsername = generateRandomUsername();
+        await registerAnonymous(randomUsername);
+        await loginAnonymous(randomUsername);
         toast.success('Anonymous account created successfully');
+        navigate('/dashboard');
       } else {
-        if (password !== confirmPassword) {
-          toast.error('Passwords do not match');
+        // Validate email and password for regular accounts
+        if (!email.trim()) {
+          toast.error('Please enter your email address');
+          setLoading(false);
           return;
         }
-        await register(username, email, password);
+        
+        if (!password.trim()) {
+          toast.error('Please enter a password');
+          setLoading(false);
+          return;
+        }
+        
+        if (password !== confirmPassword) {
+          toast.error('Passwords do not match');
+          setLoading(false);
+          return;
+        }
+        
+        if (password.length < 6) {
+          toast.error('Password must be at least 6 characters long');
+          setLoading(false);
+          return;
+        }
+        
+        // Generate username from email for regular users
+        const emailUsername = email.split('@')[0] + Math.floor(Math.random() * 1000);
+        
+        await register(emailUsername, email, password);
         toast.success('Account created successfully! Please log in.');
         navigate('/login');
         return;
       }
-      navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Registration failed');
+      console.error('Registration error:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Registration failed';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -84,21 +122,6 @@ export const Register: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Choose a username"
-              />
-            </div>
-
             {!isAnonymous && (
               <>
                 <div>
@@ -114,6 +137,9 @@ export const Register: React.FC = () => {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                     placeholder="Enter your email"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    We'll use this to create your account and for login
+                  </p>
                 </div>
 
                 <div>
@@ -128,7 +154,7 @@ export const Register: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 pr-10"
-                      placeholder="Create a password"
+                      placeholder="Create a password (min 6 characters)"
                     />
                     <button
                       type="button"
@@ -159,6 +185,17 @@ export const Register: React.FC = () => {
                   />
                 </div>
               </>
+            )}
+
+            {isAnonymous && (
+              <div className="text-center py-4">
+                <UserCheck className="mx-auto h-16 w-16 text-purple-600 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Anonymous Account</h3>
+                <p className="text-sm text-gray-600">
+                  We'll create a secure anonymous account for you automatically. 
+                  No personal information required.
+                </p>
+              </div>
             )}
 
             <button

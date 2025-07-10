@@ -1,5 +1,6 @@
 """
 Authentication service for user management and JWT tokens.
+Enhanced with better error handling and validation.
 """
 
 from datetime import datetime, timedelta
@@ -28,7 +29,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 class AuthService:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
-        return pwd_context.verify(plain_password, hashed_password)
+        try:
+            return pwd_context.verify(plain_password, hashed_password)
+        except Exception:
+            return False
 
     def get_password_hash(self, password: str) -> str:
         """Hash a password"""
@@ -48,44 +52,56 @@ class AuthService:
 
     def create_user(self, db: Session, user: UserCreate) -> User:
         """Create a new regular user"""
-        hashed_password = self.get_password_hash(user.password)
-        db_user = User(
-            email=user.email,
-            username=user.username,
-            hashed_password=hashed_password,
-            is_anonymous=False
-        )
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
+        try:
+            hashed_password = self.get_password_hash(user.password)
+            db_user = User(
+                email=user.email,
+                username=user.username,
+                hashed_password=hashed_password,
+                is_anonymous=False
+            )
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+            return db_user
+        except Exception as e:
+            db.rollback()
+            raise e
 
     def create_anonymous_user(self, db: Session, user: UserCreateAnonymous) -> User:
         """Create a new anonymous user"""
-        db_user = User(
-            email=f"{user.username}@anonymous.local",
-            username=user.username,
-            hashed_password="",  # No password for anonymous users
-            is_anonymous=True
-        )
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
+        try:
+            db_user = User(
+                email=f"{user.username}@anonymous.local",
+                username=user.username,
+                hashed_password="",  # No password for anonymous users
+                is_anonymous=True
+            )
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+            return db_user
+        except Exception as e:
+            db.rollback()
+            raise e
 
-    def authenticate_user(self, db: Session, username: str, password: str) -> Optional[User]:
+    def authenticate_user(self, db: Session, username_or_email: str, password: str) -> Optional[User]:
         """Authenticate a user with username/email and password"""
-        user = db.query(User).filter(
-            (User.username == username) | (User.email == username)
-        ).first()
-        
-        if not user or user.is_anonymous:
+        try:
+            # Try to find user by username or email
+            user = db.query(User).filter(
+                (User.username == username_or_email) | (User.email == username_or_email)
+            ).first()
+            
+            if not user or user.is_anonymous:
+                return None
+            
+            if not self.verify_password(password, user.hashed_password):
+                return None
+            
+            return user
+        except Exception:
             return None
-        
-        if not self.verify_password(password, user.hashed_password):
-            return None
-        
-        return user
 
     async def get_current_user(self, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
         """Get current user from JWT token"""
