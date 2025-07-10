@@ -12,19 +12,8 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    // Only use HTTPS if certificates exist
-    https: (() => {
-      const keyPath = path.resolve(__dirname, 'certs/key.pem');
-      const certPath = path.resolve(__dirname, 'certs/cert.pem');
-      
-      if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-        return {
-          key: fs.readFileSync(keyPath),
-          cert: fs.readFileSync(certPath),
-        };
-      }
-      return false;
-    })(),
+    // Use HTTP by default to match backend protocol
+    https: false,
   },
   build: {
     rollupOptions: {
