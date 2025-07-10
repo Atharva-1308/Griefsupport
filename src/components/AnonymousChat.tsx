@@ -242,208 +242,217 @@ export const AnonymousChat: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-200px)] flex flex-col">
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 text-white rounded-t-xl shadow-lg p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Bot className="h-8 w-8" />
-            <div>
-              <h1 className="text-2xl font-bold">Anonymous Grief Support</h1>
-              <p className="text-purple-100 mt-1">
-                Private, secure, and completely anonymous - no signup required
-              </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 p-4">
+      <div className="max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-800 dark:to-blue-800 text-white rounded-t-2xl shadow-xl p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white bg-opacity-20 p-3 rounded-full">
+                <Bot className="h-10 w-10" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">Anonymous Grief Support</h1>
+                <p className="text-purple-100 mt-2 text-lg">
+                  Private, secure, and completely anonymous - no signup required
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              {/* Connection Status */}
+              <div className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${
+                backendConnected === true 
+                  ? 'bg-green-100 text-green-800' 
+                  : backendConnected === false 
+                  ? 'bg-red-100 text-red-800' 
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {backendConnected === true ? (
+                  <>
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Connected</span>
+                  </>
+                ) : backendConnected === false ? (
+                  <>
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Offline</span>
+                    <button onClick={retryConnection} className="ml-1 hover:scale-110 transition-transform">
+                      <RefreshCw className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Loader className="h-4 w-4 animate-spin" />
+                    <span>Connecting...</span>
+                  </>
+                )}
+              </div>
+              
+              <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>🔒 Anonymous</span>
+              </div>
+              
+              <button
+                onClick={() => setVoiceEnabled(!voiceEnabled)}
+                disabled={backendConnected === false}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-200 font-medium ${
+                  voiceEnabled 
+                    ? 'bg-white text-purple-600 shadow-lg' 
+                    : 'bg-purple-500 text-white hover:bg-purple-400'
+                } ${backendConnected === false ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+              >
+                <Volume2 className="h-5 w-5" />
+                <span>{voiceEnabled ? 'Voice On' : 'Voice Off'}</span>
+              </button>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            {/* Connection Status */}
-            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
-              backendConnected === true 
-                ? 'bg-green-100 text-green-800' 
-                : backendConnected === false 
-                ? 'bg-red-100 text-red-800' 
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              {backendConnected === true ? (
-                <>
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Connected</span>
-                </>
-              ) : backendConnected === false ? (
-                <>
-                  <AlertCircle className="h-4 w-4" />
-                  <span>Offline</span>
-                  <button onClick={retryConnection} className="ml-1">
-                    <RefreshCw className="h-3 w-3" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                  <span>Connecting...</span>
-                </>
-              )}
+          
+          {connectionError && (
+            <div className="mt-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5" />
+              <span>{connectionError}</span>
             </div>
-            
-            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-              🔒 Anonymous
-            </div>
-            <button
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
-              disabled={backendConnected === false}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                voiceEnabled 
-                  ? 'bg-white text-purple-600' 
-                  : 'bg-purple-500 text-white hover:bg-purple-400'
-              } ${backendConnected === false ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Volume2 className="h-4 w-4" />
-              <span className="text-sm">{voiceEnabled ? 'Voice On' : 'Voice Off'}</span>
-            </button>
-          </div>
+          )}
         </div>
-        
-        {connectionError && (
-          <div className="mt-3 p-2 bg-red-100 text-red-800 rounded-lg text-sm">
-            <AlertCircle className="h-4 w-4 inline mr-2" />
-            {connectionError}
-          </div>
-        )}
-      </div>
 
-      <div className="flex-1 bg-white dark:bg-gray-900 overflow-y-auto p-6 space-y-4">
-        <AnimatePresence>
-          {messages.map((message, index) => (
+        {/* Chat Messages Area - Much Larger */}
+        <div className="flex-1 bg-white dark:bg-gray-900 overflow-y-auto p-8 space-y-6 min-h-0">
+          <AnimatePresence>
+            {messages.map((message, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`flex items-start space-x-4 max-w-4xl ${
+                  message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''
+                }`}>
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
+                    message.type === 'user' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
+                  }`}>
+                    {message.type === 'user' ? (
+                      <User className="h-6 w-6" />
+                    ) : (
+                      <Bot className="h-6 w-6" />
+                    )}
+                  </div>
+                  <div className={`rounded-2xl p-6 shadow-lg max-w-3xl ${
+                    message.type === 'user'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'
+                  }`}>
+                    {message.isVoice ? (
+                      <div className="flex items-center space-x-3">
+                        <Mic className="h-5 w-5" />
+                        <span className="italic text-lg">Voice message</span>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap leading-relaxed text-lg">{message.content}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-4">
+                      <p className={`text-sm ${
+                        message.type === 'user' ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {format(message.timestamp, 'HH:mm')}
+                      </p>
+                      {message.audioUrl && (
+                        <button
+                          onClick={() => playAudio(message.audioUrl!)}
+                          className="flex items-center space-x-2 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                        >
+                          <Volume2 className="h-4 w-4" />
+                          <span>Play</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {loading && (
             <motion.div
-              key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              className="flex justify-start"
             >
-              <div className={`flex items-start space-x-3 max-w-3xl ${
-                message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-              }`}>
-                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                  message.type === 'user' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
-                }`}>
-                  {message.type === 'user' ? (
-                    <User className="h-5 w-5" />
-                  ) : (
-                    <Bot className="h-5 w-5" />
-                  )}
+              <div className="flex items-start space-x-4 max-w-4xl">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center shadow-lg">
+                  <Bot className="h-6 w-6" />
                 </div>
-                <div className={`rounded-2xl p-4 shadow-lg ${
-                  message.type === 'user'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'
-                }`}>
-                  {message.isVoice ? (
-                    <div className="flex items-center space-x-2">
-                      <Mic className="h-4 w-4" />
-                      <span className="italic">Voice message</span>
-                    </div>
-                  ) : (
-                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-3">
-                    <p className={`text-xs ${
-                      message.type === 'user' ? 'text-purple-200' : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {format(message.timestamp, 'HH:mm')}
-                    </p>
-                    {message.audioUrl && (
-                      <button
-                        onClick={() => playAudio(message.audioUrl!)}
-                        className="flex items-center space-x-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-                      >
-                        <Volume2 className="h-3 w-3" />
-                        <span>Play</span>
-                      </button>
-                    )}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                  <div className="flex items-center space-x-3">
+                    <Loader className="h-5 w-5 animate-spin text-purple-600" />
+                    <span className="text-gray-600 dark:text-gray-300 text-lg">Hope is thinking...</span>
                   </div>
                 </div>
               </div>
             </motion.div>
-          ))}
-        </AnimatePresence>
+          )}
 
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex justify-start"
-          >
-            <div className="flex items-start space-x-3 max-w-3xl">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center">
-                <Bot className="h-5 w-5" />
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center space-x-2">
-                  <Loader className="h-4 w-4 animate-spin text-purple-600" />
-                  <span className="text-gray-600 dark:text-gray-300">Hope is thinking...</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      <div className="bg-white dark:bg-gray-900 rounded-b-xl shadow-lg p-6 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex space-x-4">
-          <div className="flex-1">
-            <textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Share what's on your mind... I'm here to listen with compassion and understanding."
-              className="w-full resize-none border border-gray-300 dark:border-gray-600 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-              rows={3}
-              disabled={loading}
-            />
-            {audioBlob && (
-              <div className="mt-2 p-2 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg">
-                <p className="text-green-800 dark:text-green-200 text-sm">✓ Voice message recorded</p>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col space-y-2">
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={backendConnected === false}
-              className={`p-3 rounded-xl transition-all duration-200 ${
-                isRecording
-                  ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-              } text-gray-700 dark:text-gray-300 flex items-center justify-center ${
-                backendConnected === false ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              {isRecording ? (
-                <MicOff className="h-5 w-5 text-white" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </button>
-            <button
-              onClick={() => sendMessage()}
-              disabled={(!inputMessage.trim() && !audioBlob) || loading}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg"
-            >
-              <Send className="h-5 w-5" />
-            </button>
-          </div>
+          <div ref={messagesEndRef} />
         </div>
-        <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Press Enter to send, Shift+Enter for new line • Completely anonymous and private
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {voiceEnabled && backendConnected ? '🔊 Voice responses enabled' : '🔇 Text only'}
-          </p>
+
+        {/* Input Area */}
+        <div className="bg-white dark:bg-gray-900 rounded-b-2xl shadow-xl p-8 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <textarea
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Share what's on your mind... I'm here to listen with compassion and understanding."
+                className="w-full resize-none border border-gray-300 dark:border-gray-600 rounded-xl p-6 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-lg"
+                rows={4}
+                disabled={loading}
+              />
+              {audioBlob && (
+                <div className="mt-3 p-3 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg">
+                  <p className="text-green-800 dark:text-green-200 text-sm font-medium">✓ Voice message recorded</p>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col space-y-3">
+              <button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={backendConnected === false}
+                className={`p-4 rounded-xl transition-all duration-200 ${
+                  isRecording
+                    ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                } text-gray-700 dark:text-gray-300 flex items-center justify-center shadow-lg ${
+                  backendConnected === false ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'
+                }`}
+              >
+                {isRecording ? (
+                  <MicOff className="h-6 w-6 text-white" />
+                ) : (
+                  <Mic className="h-6 w-6" />
+                )}
+              </button>
+              <button
+                onClick={() => sendMessage()}
+                disabled={(!inputMessage.trim() && !audioBlob) || loading}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:scale-105"
+              >
+                <Send className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Press Enter to send, Shift+Enter for new line • Completely anonymous and private
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {voiceEnabled && backendConnected ? '🔊 Voice responses enabled' : '🔇 Text only'}
+            </p>
+          </div>
         </div>
       </div>
     </div>
