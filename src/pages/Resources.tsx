@@ -57,12 +57,17 @@ export const Resources: React.FC = () => {
         api.get('/resources/hotlines'),
       ]);
 
-      setBooks(booksRes.data);
-      setArticles(articlesRes.data);
-      setVideos(videosRes.data);
-      setHotlines(hotlinesRes.data);
+      setBooks(Array.isArray(booksRes.data) ? booksRes.data : []);
+      setArticles(Array.isArray(articlesRes.data) ? articlesRes.data : []);
+      setVideos(Array.isArray(videosRes.data) ? videosRes.data : []);
+      setHotlines(Array.isArray(hotlinesRes.data) ? hotlinesRes.data : []);
     } catch (error) {
       console.error('Failed to fetch resources:', error);
+      // Set empty arrays as fallback on error
+      setBooks([]);
+      setArticles([]);
+      setVideos([]);
+      setHotlines([]);
     }
   };
 
